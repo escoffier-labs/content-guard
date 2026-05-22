@@ -5,6 +5,35 @@ import re
 from .types import Rule
 
 DEFAULT_RULES: tuple[Rule, ...] = (
+    # Example-pattern rules placed BEFORE general patterns so they claim
+    # their spans first (engine uses first-match-wins via _overlaps).
+    # These cover reserved-for-documentation ranges that should warn, not block:
+    #   - NANPA reserved 555-area phone numbers (only the 555-01XX range is
+    #     truly reserved, but 555-XXXX in general is widely used in fiction
+    #     and examples and almost never a real subscriber line)
+    #   - RFC 2606 reserved example.{com,org,net} email domains
+    Rule(
+        id="example-phone-555",
+        category="pii",
+        pattern=(
+            r"(?:"
+            r"(?<!\w)\+1[\s.-]?\(?555\)?[\s.-]?\d{3}[\s.-]?\d{4}(?!\w)"
+            r"|(?<!\w)\(555\)\s*\d{3}[\s.-]?\d{4}(?!\w)"
+            r"|(?<!\w)555[\s.-]\d{3}[\s.-]\d{4}(?!\w)"
+            r")"
+        ),
+        replacement="<EXAMPLE_PHONE>",
+        description="NANPA-reserved 555-area phone number (illustrative/example).",
+        flags=re.IGNORECASE,
+    ),
+    Rule(
+        id="example-email-reserved",
+        category="pii",
+        pattern=r"\b[A-Z0-9._%+-]+@example\.(?:com|org|net)\b",
+        replacement="<EXAMPLE_EMAIL>",
+        description="RFC 2606 reserved example.{com,org,net} email (illustrative).",
+        flags=re.IGNORECASE,
+    ),
     Rule(
         id="ssh-private-target",
         category="infrastructure",

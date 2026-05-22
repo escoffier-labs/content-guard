@@ -88,7 +88,7 @@ class CliTests(unittest.TestCase):
             root = Path(tmp)
             target = root / "pr-body.md"
             # content-guard: allow all
-            target.write_text("PR body with localhost:5204 and alice@example.com\n")
+            target.write_text("PR body with localhost:5204 and alice@solomonneas.dev\n")
 
             proc = subprocess.run(
                 [
@@ -161,7 +161,7 @@ class CliTests(unittest.TestCase):
                 cwd=ROOT,
                 env={"PYTHONPATH": str(ROOT / "src")},
                 # content-guard: allow all
-                input="PR body with localhost:5204 and alice@example.com.\n",
+                input="PR body with localhost:5204 and alice@solomonneas.dev.\n",
                 capture_output=True,
                 text=True,
                 check=False,
@@ -303,7 +303,7 @@ class CliTests(unittest.TestCase):
             subprocess.run(["git", "add", "README.md"], cwd=repo, check=True)
             subprocess.run(
                 # content-guard: allow email
-                ["git", "commit", "-m", "fix: contact person@example.com"],
+                ["git", "commit", "-m", "fix: contact person@solomonneas.dev"],
                 cwd=repo,
                 check=True,
                 capture_output=True,
@@ -364,7 +364,7 @@ class CliTests(unittest.TestCase):
             self._init_repo(repo)
             pr_body = repo / "pr-body.md"
             # content-guard: allow all
-            pr_body.write_text("PR body mentions localhost:5204 and person@example.com.\n")
+            pr_body.write_text("PR body mentions localhost:5204 and person@solomonneas.dev.\n")
 
             proc = subprocess.run(
                 [

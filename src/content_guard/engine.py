@@ -7,7 +7,7 @@ from .detectors.opf import run_opf
 from .policy import Policy
 from .types import Finding, GuardResult, Rule, ScanOptions, TextEdit
 
-ALLOW_RE = re.compile(r"content-guard:\s*allow\s+([A-Za-z0-9_.:-]+|all)")
+ALLOW_RE = re.compile(r"content-guard:\s*allow\s+([A-Za-z0-9_.:-]+|all)(?:\s+(file))?")
 
 
 def scan_text(text: str, policy: Policy | None = None, options: ScanOptions | None = None) -> GuardResult:
@@ -16,7 +16,10 @@ def scan_text(text: str, policy: Policy | None = None, options: ScanOptions | No
 
     line_starts = _line_starts(text)
     skipped_ranges = _skipped_ranges(text, active_options)
-    allow_by_line = _allow_comments_by_line(text) if active_options.honor_allow_comments else {}
+    if active_options.honor_allow_comments:
+        allow_by_line, file_allows = _allow_comments_by_line(text)
+    else:
+        allow_by_line, file_allows = {}, set()
 
     findings: list[Finding] = []
     occupied: list[tuple[int, int]] = []
@@ -33,7 +36,7 @@ def scan_text(text: str, policy: Policy | None = None, options: ScanOptions | No
                 continue
 
             line = _line_for_offset(line_starts, start)
-            allowed_by = _allowed_by(rule.id, line, allow_by_line)
+            allowed_by = _allowed_by(rule.id, line, allow_by_line, file_allows)
             action = "allow" if allowed_by else active_policy.action_for(rule)
             findings.append(
                 Finding(
@@ -147,19 +150,41 @@ def _line_for_offset(starts: list[int], offset: int) -> int:
     return bisect.bisect_right(starts, offset)
 
 
-def _allow_comments_by_line(text: str) -> dict[int, set[str]]:
+def _allow_comments_by_line(text: str) -> tuple[dict[int, set[str]], set[str]]:
+    """Parse allow comments. Returns (line-scoped tokens, file-scoped tokens).
+
+    Line-scoped: `<!-- content-guard: allow <rule-id> -->` applies to the
+    comment's line and the line after (preserves existing semantics).
+
+    File-scoped: `<!-- content-guard: allow <rule-id> file -->` applies to the
+    entire file regardless of where the comment lives.
+    """
     allowed: dict[int, set[str]] = {}
+    file_allows: set[str] = set()
     for line_no, line in enumerate(text.splitlines(), 1):
         match = ALLOW_RE.search(line)
         if not match:
             continue
         token = match.group(1)
-        allowed.setdefault(line_no, set()).add(token)
-        allowed.setdefault(line_no + 1, set()).add(token)
-    return allowed
+        file_scope = match.group(2) == "file"
+        if file_scope:
+            file_allows.add(token)
+        else:
+            allowed.setdefault(line_no, set()).add(token)
+            allowed.setdefault(line_no + 1, set()).add(token)
+    return allowed, file_allows
 
 
-def _allowed_by(rule_id: str, line: int, allow_by_line: dict[int, set[str]]) -> str | None:
+def _allowed_by(
+    rule_id: str,
+    line: int,
+    allow_by_line: dict[int, set[str]],
+    file_allows: set[str],
+) -> str | None:
+    if "all" in file_allows:
+        return "all"
+    if rule_id in file_allows:
+        return rule_id
     tokens = allow_by_line.get(line, set())
     if "all" in tokens:
         return "all"

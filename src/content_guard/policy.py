@@ -37,13 +37,34 @@ class Policy:
     )
     rules: dict[str, Action] = field(default_factory=dict)
     custom_rules: list[Rule] = field(default_factory=list)
+    known_hosts: list[str] = field(default_factory=list)
     opf_backend: OpfBackendConfig = field(default_factory=OpfBackendConfig)
 
     def action_for(self, rule: Rule) -> Action:
+        # known-host always blocks unless explicitly overridden by the user.
+        # This is by design: known_hosts entries are real internal hosts the
+        # user listed; they should not be subject to category-level downgrades.
+        if rule.id == "known-host" and rule.id not in self.rules:
+            return "block"
         return self.rules.get(rule.id) or self.defaults.get(rule.category, "warn")
 
     def all_rules(self) -> list[Rule]:
-        return [*DEFAULT_RULES, *self.custom_rules]
+        # Synthetic known-host rule runs FIRST so it claims spans before more
+        # general patterns (private-ipv4, etc.). Always BLOCK regardless of
+        # category default, since these are explicit user-defined real hosts.
+        known_rule: list[Rule] = []
+        if self.known_hosts:
+            pattern = r"\b(?:" + "|".join(re.escape(h) for h in self.known_hosts) + r")\b"
+            known_rule.append(
+                Rule(
+                    id="known-host",
+                    category="infrastructure",
+                    pattern=pattern,
+                    replacement="[redacted-known-host]",
+                    description="Known internal host or IP (policy-defined).",
+                )
+            )
+        return [*known_rule, *DEFAULT_RULES, *self.custom_rules]
 
 
 def _as_action(value: Any, where: str) -> Action:
@@ -89,6 +110,7 @@ def load_policy(path: str | PathLike[str] | Traversable | None) -> Policy:
         rules[str(rule_id)] = _as_action(action, f"rules.{rule_id}")
 
     custom_rules = [_parse_custom_rule(item, i) for i, item in enumerate(raw.get("custom_rules", []))]
+    known_hosts = _parse_known_hosts(raw.get("known_hosts"))
     opf_backend = _parse_opf_backend(raw.get("backends", {}).get("opf") if isinstance(raw.get("backends"), dict) else None)
     if opf_backend.action:
         rules["opf-pii"] = opf_backend.action
@@ -98,12 +120,26 @@ def load_policy(path: str | PathLike[str] | Traversable | None) -> Policy:
         defaults=defaults,
         rules=rules,
         custom_rules=custom_rules,
+        known_hosts=known_hosts,
         opf_backend=OpfBackendConfig(
             enabled=opf_backend.enabled,
             device=opf_backend.device,
             bin=opf_backend.bin,
         ),
     )
+
+
+def _parse_known_hosts(raw: Any) -> list[str]:
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError("known_hosts must be a list of host strings")
+    hosts: list[str] = []
+    for i, entry in enumerate(raw):
+        if not isinstance(entry, str) or not entry.strip():
+            raise ValueError(f"known_hosts[{i}] must be a non-empty string")
+        hosts.append(entry.strip())
+    return hosts
 
 
 def _parse_custom_rule(item: Any, index: int) -> Rule:
