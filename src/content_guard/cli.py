@@ -7,11 +7,19 @@ import sys
 from pathlib import Path
 
 from .audit import render_text as render_audit_text, run_audit
+from .baseline import (
+    DEFAULT_BASELINE_FILENAME,
+    Baseline,
+    filter_findings,
+    init_baseline,
+    load_baseline,
+    save_baseline,
+)
 from .engine import scan_text
 from .git_scan import _default_repo_policy
 from .policy import load_policy
 from .report import to_json, to_payload, to_text
-from .types import ScanOptions
+from .types import GuardResult, ScanOptions
 
 
 DEFAULT_EXCLUDE_DIR_NAMES = frozenset(
@@ -45,6 +53,10 @@ def main(argv: list[str] | None = None) -> int:
         return _redact(args)
     if args.command == "diff":
         return _diff(args)
+    if args.command == "audit":
+        return _audit(args)
+    if args.command == "baseline":
+        return _baseline(args)
 
     parser.error(f"unknown command: {args.command}")
     return 2
@@ -69,7 +81,58 @@ def build_parser() -> argparse.ArgumentParser:
         cmd.add_argument("--no-allow-comments", action="store_true", help="ignore content-guard allow comments")
 
     sub.choices["scan"].add_argument("--json", action="store_true", help="emit JSON report")
+    sub.choices["scan"].add_argument(
+        "--baseline",
+        help="path to a baseline file; findings already in the baseline are suppressed",
+    )
     sub.choices["redact"].add_argument("--in-place", action="store_true", help="rewrite the target file")
+
+    audit_cmd = sub.add_parser("audit", help="aggregate scan results across a directory")
+    audit_cmd.add_argument("target", help="directory to audit")
+    audit_cmd.add_argument("--policy", help="JSON policy file (default: built-in public-repo policy)")
+    audit_cmd.add_argument(
+        "--scope",
+        choices=("tracked", "tree"),
+        default="tracked",
+        help="enumerate via 'git ls-files' (tracked, default) or filesystem walk (tree)",
+    )
+    audit_cmd.add_argument("--json", action="store_true", help="emit JSON report")
+    audit_cmd.add_argument(
+        "--strict",
+        action="store_true",
+        help="exit non-zero if any blocking findings (default exits 0)",
+    )
+    audit_cmd.add_argument("--scan-frontmatter", action="store_true", help="scan YAML frontmatter")
+    audit_cmd.add_argument("--skip-code-blocks", action="store_true", help="ignore fenced code blocks")
+    audit_cmd.add_argument(
+        "--no-allow-comments",
+        action="store_true",
+        help="ignore content-guard allow comments",
+    )
+    audit_cmd.add_argument("--opf", action="store_true", help="run optional OPF backend")
+    audit_cmd.add_argument("--opf-bin", help="path to opf binary")
+    audit_cmd.add_argument("--opf-device", help="OPF device, default comes from policy or cpu")
+
+    baseline_cmd = sub.add_parser(
+        "baseline",
+        help="manage a baseline of pre-existing findings (gitleaks-style)",
+    )
+    baseline_sub = baseline_cmd.add_subparsers(dest="baseline_action", required=True)
+
+    baseline_init = baseline_sub.add_parser(
+        "init",
+        help="scan a directory and record current findings as an accepted baseline",
+    )
+    baseline_init.add_argument("target", help="directory to scan")
+    baseline_init.add_argument("--policy", help="JSON policy file")
+    baseline_init.add_argument(
+        "--output",
+        help=(
+            f"output path for the baseline file "
+            f"(default: <target>/{DEFAULT_BASELINE_FILENAME})"
+        ),
+    )
+
     return parser
 
 
@@ -96,8 +159,15 @@ def _scan(args: argparse.Namespace) -> int:
     options = _options(args)
     target_path = Path(args.target) if args.target and args.target != "-" else None
 
+    baseline = load_baseline(Path(args.baseline)) if getattr(args, "baseline", None) else None
+
     if target_path and target_path.is_dir():
         results = _scan_directory(target_path, policy, options)
+        if baseline is not None:
+            results = [
+                (p, _apply_baseline(r, baseline, _baseline_rel_path(p, target_path)))
+                for p, r in results
+            ]
         blocked = any(result.blocked for _, result in results)
         if args.json:
             print(
@@ -126,11 +196,29 @@ def _scan(args: argparse.Namespace) -> int:
 
     text, path = _read_target(args.target)
     result = scan_text(text, policy=policy, options=options)
+    if baseline is not None:
+        # Single-file scan: match against the file's basename, since baseline
+        # entries are stored relative to their init target directory.
+        rel = Path(path).name if path else ""
+        result = _apply_baseline(result, baseline, rel)
     if args.json:
         print(to_json(result))
     else:
         print(to_text(result, path=path or "<stdin>"))
     return 1 if result.blocked else 0
+
+
+def _baseline_rel_path(file_path: Path, target_dir: Path) -> str:
+    try:
+        return str(file_path.relative_to(target_dir))
+    except ValueError:
+        return str(file_path)
+
+
+def _apply_baseline(result: GuardResult, baseline: Baseline, rel_path: str) -> GuardResult:
+    """Return a new GuardResult with baseline-known findings filtered out."""
+    kept = filter_findings(result.findings, baseline, rel_path)
+    return GuardResult(text=result.text, redacted_text=result.redacted_text, findings=kept)
 
 
 def _redact(args: argparse.Namespace) -> int:
@@ -194,6 +282,57 @@ def _scan_directory(
         text = file_path.read_text()
         results.append((file_path, scan_text(text, policy=policy, options=options)))
     return results
+
+
+def _audit(args: argparse.Namespace) -> int:
+    target = Path(args.target)
+    if not target.exists():
+        print(f"audit target does not exist: {target}", file=sys.stderr)
+        return 2
+    if not target.is_dir():
+        print(f"audit target must be a directory: {target}", file=sys.stderr)
+        return 2
+
+    policy = load_policy(args.policy) if args.policy else _default_repo_policy()
+    options = _options(args)
+
+    report = run_audit(target, policy=policy, scope=args.scope, options=options)
+
+    if args.json:
+        print(json.dumps(report.to_payload(), indent=2, sort_keys=True))
+    else:
+        print(render_audit_text(report))
+
+    if args.strict and report.blocked:
+        return 1
+    return 0
+
+
+def _baseline(args: argparse.Namespace) -> int:
+    if args.baseline_action != "init":
+        print(f"unknown baseline action: {args.baseline_action}", file=sys.stderr)
+        return 2
+
+    target = Path(args.target)
+    if not target.exists():
+        print(f"baseline target does not exist: {target}", file=sys.stderr)
+        return 2
+    if not target.is_dir():
+        print(f"baseline target must be a directory: {target}", file=sys.stderr)
+        return 2
+
+    policy = load_policy(args.policy) if args.policy else None
+    baseline = init_baseline(target, policy=policy, scope="tree")
+
+    out_path = Path(args.output) if args.output else target / DEFAULT_BASELINE_FILENAME
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    save_baseline(baseline, out_path)
+
+    print(
+        f"Baseline written: {out_path} "
+        f"({len(baseline.entries)} entry(ies) captured)"
+    )
+    return 0
 
 
 def _write_diff(text: str, redacted_text: str, source_name: str) -> None:

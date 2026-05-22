@@ -134,6 +134,48 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(result.redacted_text, "<PRIVATE_PERSON> wrote the draft.")
 
 
+class ApiKeyAssignmentFalsePositiveTests(unittest.TestCase):
+    """The api-key-assignment rule should not match code that reads a secret
+    from a safe source (env vars, config objects). Those are not leaks; the
+    actual secret is in the env, not in this file."""
+
+    def test_process_env_assignment_not_flagged(self) -> None:
+        # content-guard: allow all
+        result = scan_text("const apiKey = process.env.IMMICH_API_KEY;")
+
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_os_environ_assignment_not_flagged(self) -> None:
+        # content-guard: allow all
+        result = scan_text('API_KEY = os.environ["IMMICH_API_KEY"]')
+
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_os_getenv_assignment_not_flagged(self) -> None:
+        # content-guard: allow all
+        result = scan_text('token = os.getenv("GH_TOKEN")')
+
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_config_object_assignment_not_flagged(self) -> None:
+        # content-guard: allow all
+        result = scan_text("apiKey = config.apiKey || settings.fallback")
+
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_real_literal_token_still_flagged(self) -> None:
+        # content-guard: allow all
+        result = scan_text('token = "abcdef1234567890abcdef1234567890"')
+
+        self.assertIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_real_unquoted_token_still_flagged(self) -> None:
+        # content-guard: allow all
+        result = scan_text("token = abcdef1234567890abcdef1234567890")
+
+        self.assertIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+
 class FileScopedAllowTests(unittest.TestCase):
     def test_allow_file_scope_exempts_entire_file(self) -> None:
         text = (

@@ -121,7 +121,18 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule(
         id="api-key-assignment",
         category="secret",
-        pattern=r"\b(?:api[_-]?key|token|secret)\s*[:=]\s*['\"]?[A-Za-z0-9_~+/=-](?:[A-Za-z0-9._~+/=-]{18,}[A-Za-z0-9_~+/=-])['\"]?",
+        # Negative lookahead skips assignments whose RHS is a safe getter:
+        #   apiKey = process.env.X      (Node env lookup)
+        #   apiKey = os.environ["X"]    (Python env lookup)
+        #   apiKey = os.getenv("X")     (Python env lookup)
+        #   apiKey = "${...}"           (shell interpolation)
+        #   apiKey = config.x or cfg.x  (config object access)
+        # These are code reading from a secret, not the secret itself.
+        pattern=(
+            r"\b(?:api[_-]?key|token|secret)\s*[:=]\s*"
+            r"(?!(?:process\.env|os\.environ|os\.getenv|config\.|cfg\.|settings\.|env\.|\$\{|\$\(|null\b|None\b|undefined\b|''|\"\"))"
+            r"['\"]?[A-Za-z0-9_~+/=-](?:[A-Za-z0-9._~+/=-]{18,}[A-Za-z0-9_~+/=-])['\"]?"
+        ),
         replacement="[redacted-secret]",
         description="Likely API key, token, or secret assignment.",
         flags=re.IGNORECASE,
