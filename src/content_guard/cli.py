@@ -6,7 +6,9 @@ import json
 import sys
 from pathlib import Path
 
+from .audit import render_text as render_audit_text, run_audit
 from .engine import scan_text
+from .git_scan import _default_repo_policy
 from .policy import load_policy
 from .report import to_json, to_payload, to_text
 from .types import ScanOptions

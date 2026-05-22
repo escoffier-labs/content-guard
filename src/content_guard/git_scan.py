@@ -92,13 +92,13 @@ def _default_repo_policy() -> Policy:
     )
 
 
-def _tracked_paths(*, all_tracked: bool) -> list[Path]:
+def _tracked_paths(*, all_tracked: bool, cwd: Path | None = None) -> list[Path]:
     if all_tracked:
         cmd = ["git", "ls-files"]
     else:
         cmd = ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"]
 
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False, cwd=cwd)
     if proc.returncode != 0:
         print((proc.stderr or proc.stdout or "git command failed").strip(), file=sys.stderr)
         raise SystemExit(2)

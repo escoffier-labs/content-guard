@@ -229,6 +229,29 @@ class ExamplePatternDowngradeTests(unittest.TestCase):
         self.assertIn("email", rule_ids)
         self.assertNotIn("example-email-reserved", rule_ids)
 
+    def test_example_rules_stay_warn_under_pii_block_policy(self) -> None:
+        # Even when the policy aggressively blocks the PII category, the
+        # example-* rules should still WARN (not BLOCK). This is the whole
+        # point of the rule-default-override mechanism.
+        policy = Policy(defaults={"pii": "block"})
+        # content-guard: allow all
+        result = scan_text("Test mail: bob@example.com. Test phone: 555-867-5309.", policy=policy)
+
+        actions = {(f.rule_id, f.action) for f in result.findings}
+        self.assertIn(("example-email-reserved", "warn"), actions)
+        self.assertIn(("example-phone-555", "warn"), actions)
+        self.assertFalse(result.blocked)
+
+    def test_example_rule_action_can_still_be_overridden_in_policy_rules(self) -> None:
+        # Users who want example-* rules to actually block can still opt in.
+        policy = Policy(rules={"example-email-reserved": "block"})
+        # content-guard: allow all
+        result = scan_text("alice@example.com", policy=policy)
+
+        actions = {(f.rule_id, f.action) for f in result.findings}
+        self.assertIn(("example-email-reserved", "block"), actions)
+        self.assertTrue(result.blocked)
+
 
 class KnownHostsTests(unittest.TestCase):
     def test_known_host_ip_blocks_in_warn_policy(self) -> None:

@@ -15,6 +15,25 @@ from .types import Action, Rule
 VALID_ACTIONS: set[str] = {"allow", "warn", "redact", "block"}
 
 
+# Per-rule action defaults that override category-level defaults. Each entry
+# represents "this rule should default to X unless the user's policy.rules map
+# explicitly overrides it."
+#
+# Why these exist:
+#   - example-* rules are illustrative-only patterns (NANPA 555 phones, RFC 2606
+#     example.{com,org,net} emails). They live in the PII category but are
+#     almost never real PII. Defaulting them to WARN avoids blocking valid
+#     documentation under a "pii: block" policy.
+#   - known-host is a synthetic rule generated from policy.known_hosts. It
+#     represents user-declared real internal IPs/hostnames. It must BLOCK
+#     even under permissive "infrastructure: warn" policies.
+_RULE_DEFAULTS: dict[str, Action] = {
+    "example-phone-555": "warn",
+    "example-email-reserved": "warn",
+    "known-host": "block",
+}
+
+
 @dataclass
 class OpfBackendConfig:
     enabled: bool = False
@@ -41,11 +60,13 @@ class Policy:
     opf_backend: OpfBackendConfig = field(default_factory=OpfBackendConfig)
 
     def action_for(self, rule: Rule) -> Action:
-        # known-host always blocks unless explicitly overridden by the user.
-        # This is by design: known_hosts entries are real internal hosts the
-        # user listed; they should not be subject to category-level downgrades.
-        if rule.id == "known-host" and rule.id not in self.rules:
-            return "block"
+        # Per-rule defaults that DEFEAT category-level defaults unless the
+        # user explicitly overrides the rule in policy.rules. This is the
+        # mechanism for the example-* rules to remain WARN even when a policy
+        # blocks the entire PII category, and for known-host to BLOCK even
+        # when a policy warns the entire infrastructure category.
+        if rule.id not in self.rules and rule.id in _RULE_DEFAULTS:
+            return _RULE_DEFAULTS[rule.id]
         return self.rules.get(rule.id) or self.defaults.get(rule.category, "warn")
 
     def all_rules(self) -> list[Rule]:
