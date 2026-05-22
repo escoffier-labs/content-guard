@@ -29,9 +29,21 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule(
         id="example-email-reserved",
         category="pii",
-        pattern=r"\b[A-Z0-9._%+-]+@example\.(?:com|org|net)\b",
+        # Reserved-for-non-real-use email TLDs:
+        #   *.example.{com,org,net}       — RFC 2606
+        #   *.test                        — RFC 2606
+        #   *.invalid                     — RFC 2606
+        #   *.localhost                   — RFC 2606
+        #   *.local                       — mDNS / RFC 6762 (link-local, not real internet domains)
+        # Also matches *@<host>.example for completeness.
+        pattern=(
+            r"\b[A-Z0-9._%+-]+@(?:"
+            r"(?:[A-Z0-9-]+\.)*example\.(?:com|org|net)"
+            r"|(?:[A-Z0-9-]+\.)*(?:test|invalid|localhost|local)"
+            r")\b"
+        ),
         replacement="<EXAMPLE_EMAIL>",
-        description="RFC 2606 reserved example.{com,org,net} email (illustrative).",
+        description="Reserved-for-documentation email (RFC 2606 / mDNS .local — illustrative).",
         flags=re.IGNORECASE,
     ),
     Rule(

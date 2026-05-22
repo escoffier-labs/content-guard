@@ -11,7 +11,7 @@
     "blocked": false,
     "changed": false,
     "finding_rule_ids": [
-      "email"
+      "example-email-reserved"
     ]
   }
 }

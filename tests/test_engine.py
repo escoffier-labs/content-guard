@@ -262,6 +262,31 @@ class ExamplePatternDowngradeTests(unittest.TestCase):
         rule_ids = {f.rule_id for f in result.findings}
         self.assertEqual(rule_ids, {"example-email-reserved"})
 
+    def test_example_email_covers_test_tld(self) -> None:
+        # RFC 2606 reserves .test for non-real use.
+        # content-guard: allow all
+        result = scan_text("admin@admin.test is the default fixture user.")
+
+        rule_ids = {f.rule_id for f in result.findings}
+        self.assertEqual(rule_ids, {"example-email-reserved"})
+
+    def test_example_email_covers_local_tld(self) -> None:
+        # mDNS / RFC 6762 reserves .local for link-local hosts (not real domains).
+        # content-guard: allow all
+        text = "Default MISP login: admin@misp.local and admin@thehive.local"
+        result = scan_text(text)
+
+        rule_ids = {f.rule_id for f in result.findings}
+        self.assertEqual(rule_ids, {"example-email-reserved"})
+
+    def test_example_email_covers_invalid_tld(self) -> None:
+        # RFC 2606 reserves .invalid.
+        # content-guard: allow all
+        result = scan_text("Use noreply@nowhere.invalid for unverified entries.")
+
+        rule_ids = {f.rule_id for f in result.findings}
+        self.assertEqual(rule_ids, {"example-email-reserved"})
+
     def test_real_email_still_blocks(self) -> None:
         policy = Policy(defaults={"pii": "block"})
         # content-guard: allow all
