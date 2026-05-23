@@ -20,10 +20,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--all-tracked", action="store_true", help="scan all tracked files")
     parser.add_argument("--staged", action="store_true", help="scan staged files, default mode")
     parser.add_argument("--include-git-config", action="store_true", help="also scan .git/config when present")
+    parser.add_argument(
+        "--history",
+        action="store_true",
+        help="scan content INTRODUCED across commit history (added lines), not just the current tip",
+    )
+    parser.add_argument("--range", dest="rev_range", help="revision range for --history, e.g. origin/main..HEAD")
+    parser.add_argument("--all", action="store_true", help="with --history, scan all reachable commits")
     parser.add_argument("--json", action="store_true", help="emit JSON report")
     args = parser.parse_args(argv)
 
     policy = load_policy(args.policy) if args.policy else _default_repo_policy()
+
+    if args.history:
+        return _scan_history(policy, args)
+
     paths = _tracked_paths(all_tracked=args.all_tracked)
     if args.include_git_config and Path(".git/config").is_file():
         paths.append(Path(".git/config"))
@@ -68,6 +79,87 @@ def main(argv: list[str] | None = None) -> int:
             print(to_text(result, path=str(path)))
 
     return 1 if blocked else 0
+
+
+def _scan_history(policy: Policy, args: argparse.Namespace) -> int:
+    """Scan the content INTRODUCED by each commit (added lines).
+
+    Closes the forward-scrub gap: a later commit can clean the tip while the
+    leak survives in the commit that originally introduced it. We scan added
+    lines per commit, so a leak is caught at its point of introduction even if
+    a subsequent commit removed it from the working tree.
+    """
+    revs = _history_revs(args)
+    results = []
+    blocked = False
+    for rev in revs:
+        text = _added_lines(rev)
+        if not text:
+            continue
+        result = scan_text(text, policy=policy)
+        if result.findings:
+            blocked = blocked or result.blocked
+            results.append((rev, result))
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "ok": not blocked,
+                    "blocked": blocked,
+                    "commits_scanned": len(revs),
+                    "commits_with_findings": len(results),
+                    "commits": [
+                        {
+                            "commit": rev,
+                            "blocked": result.blocked,
+                            "counts_by_action": result.counts_by_action(),
+                            "counts_by_category": result.counts_by_category(),
+                        }
+                        for rev, result in results
+                    ],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+    elif not results:
+        print(f"Clean. introduced content of {len(revs)} commit(s) checked.")
+    else:
+        for rev, result in results:
+            print(to_text(result, path=f"commit {rev[:12]} (introduced content)"))
+
+    return 1 if blocked else 0
+
+
+def _history_revs(args: argparse.Namespace) -> list[str]:
+    if args.all:
+        cmd = ["git", "rev-list", "--all"]
+    elif args.rev_range:
+        cmd = ["git", "rev-list", args.rev_range]
+    else:
+        cmd = ["git", "rev-list", "HEAD"]
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if proc.returncode != 0:
+        print((proc.stderr or "git rev-list failed").strip(), file=sys.stderr)
+        raise SystemExit(2)
+    return [line for line in proc.stdout.splitlines() if line.strip()]
+
+
+def _added_lines(rev: str) -> str:
+    proc = subprocess.run(
+        ["git", "show", "--no-color", "--first-parent", "--format=", "--unified=0", rev],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return ""
+    out = []
+    for line in proc.stdout.splitlines():
+        if line.startswith("+") and not line.startswith("+++"):
+            out.append(line[1:])
+    return "\n".join(out)
 
 
 def _default_repo_policy() -> Policy:
