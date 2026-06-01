@@ -33,15 +33,23 @@ ZERO="0000000000000000000000000000000000000000"
 FAIL=0
 STDIN_REFS="$(cat)"
 
+# Apply the private policy's allow_values (known-public literals such as a
+# public author email or an example port) to EVERY scan, including the public
+# one. This is how a history scan of an old commit clears those literals: no
+# inline `content-guard: allow` marker can exist in a past diff, and the values
+# stay in the private file rather than a shipped public policy.
+ALLOW_FROM=()
+[[ -f "$EXTRA_POLICY" ]] && ALLOW_FROM=(--allow-values-from "$EXTRA_POLICY")
+
 scan_with() {
   local pol="$1"
   echo "pre-push: [tip] scanning tracked files against $(basename "$pol")"
-  RUN --all-tracked --policy "$pol" || FAIL=1
+  RUN --all-tracked --policy "$pol" "${ALLOW_FROM[@]+"${ALLOW_FROM[@]}"}" || FAIL=1
   while read -r _lref lsha _rref rsha; do
     [[ -z "${lsha:-}" || "$lsha" == "$ZERO" ]] && continue   # branch deletion
     if [[ "$rsha" == "$ZERO" ]]; then range="$lsha"; else range="$rsha..$lsha"; fi
     echo "pre-push: [history] scanning introduced content in $range"
-    RUN --history --range "$range" --policy "$pol" || FAIL=1
+    RUN --history --range "$range" --policy "$pol" "${ALLOW_FROM[@]+"${ALLOW_FROM[@]}"}" || FAIL=1
   done < <(printf '%s\n' "$STDIN_REFS")
 }
 
@@ -55,8 +63,11 @@ if [[ "$FAIL" -ne 0 ]]; then
     echo "pre-push: A [history] hit means a leak lives in a commit diff even if the tip is clean."
     echo "pre-push: Forward-scrub commits do NOT fix history - rewrite it (git filter-repo) and"
     echo "pre-push: re-verify with: content_guard.git_scan --history --all --policy <policy>"
-    echo "pre-push: Inline allow (only for genuinely public example data, never real infra):"
+    echo "pre-push: Inline allow on the tip (only for genuinely public example data, never real infra):"
     echo "pre-push:   <!-- content-guard: allow <rule-id> -->"
+    echo "pre-push: For a known-public literal that trips a [history] hit (no inline marker can"
+    echo "pre-push: reach an old diff), add the exact string to allow_values in your private policy"
+    echo "pre-push:   ${EXTRA_POLICY}"
     echo "pre-push: Bypass only if you know what you are doing: git push --no-verify"
   } >&2
   exit 1

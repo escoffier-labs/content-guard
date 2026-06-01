@@ -17,6 +17,18 @@ def main(argv: list[str] | None = None) -> int:
         description="Scan public Git repository content before commit or push.",
     )
     parser.add_argument("--policy", help="JSON policy file")
+    parser.add_argument(
+        "--allow-values-from",
+        dest="allow_values_from",
+        action="append",
+        metavar="PATH",
+        help=(
+            "merge the allow_values list from another JSON policy file into the "
+            "active policy. Use to apply a private allowlist (e.g. a known-public "
+            "email or example port) to a scan without putting those literals in a "
+            "shipped public policy. Repeatable."
+        ),
+    )
     parser.add_argument("--all-tracked", action="store_true", help="scan all tracked files")
     parser.add_argument("--staged", action="store_true", help="scan staged files, default mode")
     parser.add_argument("--include-git-config", action="store_true", help="also scan .git/config when present")
@@ -31,6 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     policy = load_policy(args.policy) if args.policy else _default_repo_policy()
+    _merge_allow_values_from(policy, args.allow_values_from or [])
 
     if args.history:
         return _scan_history(policy, args)
@@ -160,6 +173,28 @@ def _added_lines(rev: str) -> str:
         if line.startswith("+") and not line.startswith("+++"):
             out.append(line[1:])
     return "\n".join(out)
+
+
+def _merge_allow_values_from(policy: Policy, paths: list[str]) -> None:
+    """Extend ``policy.allow_values`` with allow_values from extra policy files.
+
+    Lets a private allowlist file (kept out of any shipped public policy) apply
+    its known-public literals to a scan that uses a different main policy.
+    Missing files are skipped quietly so an optional private file is never a
+    hard error; malformed files surface through ``load_policy``.
+    """
+    for raw_path in paths:
+        path = Path(raw_path)
+        if not path.is_file():
+            # Fail-safe: a missing allowlist file never weakens a scan (nothing
+            # extra is allowed). Warn so an explicit CLI typo is not silent; the
+            # pre-push hook only passes its private file when it exists.
+            print(f"content-guard: allow-values file not found, skipping: {path}", file=sys.stderr)
+            continue
+        extra = load_policy(path)
+        for value in extra.allow_values:
+            if value not in policy.allow_values:
+                policy.allow_values.append(value)
 
 
 def _default_repo_policy() -> Policy:

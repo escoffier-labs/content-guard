@@ -57,6 +57,13 @@ class Policy:
     rules: dict[str, Action] = field(default_factory=dict)
     custom_rules: list[Rule] = field(default_factory=list)
     known_hosts: list[str] = field(default_factory=list)
+    # Literal strings that are known-public and safe. A finding whose matched
+    # text equals one of these exactly is forced to action "allow" regardless
+    # of rule or category. Unlike inline `content-guard: allow` comments, this
+    # applies everywhere including history scans of old commit diffs, where no
+    # inline marker can exist. Keep personal or environment-specific values in
+    # a private policy file, never in a shipped public default policy.
+    allow_values: list[str] = field(default_factory=list)
     opf_backend: OpfBackendConfig = field(default_factory=OpfBackendConfig)
 
     def action_for(self, rule: Rule) -> Action:
@@ -132,6 +139,7 @@ def load_policy(path: str | PathLike[str] | Traversable | None) -> Policy:
 
     custom_rules = [_parse_custom_rule(item, i) for i, item in enumerate(raw.get("custom_rules", []))]
     known_hosts = _parse_known_hosts(raw.get("known_hosts"))
+    allow_values = _parse_allow_values(raw.get("allow_values"))
     opf_backend = _parse_opf_backend(raw.get("backends", {}).get("opf") if isinstance(raw.get("backends"), dict) else None)
     if opf_backend.action:
         rules["opf-pii"] = opf_backend.action
@@ -142,6 +150,7 @@ def load_policy(path: str | PathLike[str] | Traversable | None) -> Policy:
         rules=rules,
         custom_rules=custom_rules,
         known_hosts=known_hosts,
+        allow_values=allow_values,
         opf_backend=OpfBackendConfig(
             enabled=opf_backend.enabled,
             device=opf_backend.device,
@@ -161,6 +170,19 @@ def _parse_known_hosts(raw: Any) -> list[str]:
             raise ValueError(f"known_hosts[{i}] must be a non-empty string")
         hosts.append(entry.strip())
     return hosts
+
+
+def _parse_allow_values(raw: Any) -> list[str]:
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError("allow_values must be a list of literal strings")
+    values: list[str] = []
+    for i, entry in enumerate(raw):
+        if not isinstance(entry, str) or not entry.strip():
+            raise ValueError(f"allow_values[{i}] must be a non-empty string")
+        values.append(entry)
+    return values
 
 
 def _parse_custom_rule(item: Any, index: int) -> Rule:

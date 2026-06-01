@@ -21,6 +21,8 @@ def scan_text(text: str, policy: Policy | None = None, options: ScanOptions | No
     else:
         allow_by_line, file_allows = {}, set()
 
+    allow_values = set(active_policy.allow_values)
+
     findings: list[Finding] = []
     occupied: list[tuple[int, int]] = []
 
@@ -37,6 +39,10 @@ def scan_text(text: str, policy: Policy | None = None, options: ScanOptions | No
 
             line = _line_for_offset(line_starts, start)
             allowed_by = _allowed_by(rule.id, line, allow_by_line, file_allows)
+            # A known-public literal exact-matches the whole finding text. This
+            # reaches history scans of old diffs where no inline marker exists.
+            if allowed_by is None and match.group(0) in allow_values:
+                allowed_by = "allow-value"
             action = "allow" if allowed_by else active_policy.action_for(rule)
             findings.append(
                 Finding(
