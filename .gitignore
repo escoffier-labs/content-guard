@@ -8,3 +8,6 @@ build/
 *.egg-info/
 .content-guard/
 implementation-notes.md
+# Untracked private policy files (real identifiers). The *.example.json
+# template is intentionally NOT matched by this rule.
+*.local.json

@@ -1,0 +1,15 @@
+{
+  "name": "private-identifiers-example",
+  "_comment": "EXAMPLE template for an untracked private policy. Copy this to the pre-push hook's default path (~/.config/content-guard/internal.json) or to policies/private-repo.local.json, then replace the placeholder patterns with your own real identifiers. NEVER commit the filled-in copy. Because the real file is untracked, keep it in an encrypted backup so it survives a machine rebuild.",
+  "defaults": {"infrastructure": "block", "secret": "block", "pii": "block", "personal": "block", "business": "block", "attribution": "block", "tooling": "warn"},
+  "_rules_comment": "Downgrade the generic built-in infra rules to warn (mirrors public-repo.json). Without this, the broad infrastructure:block default re-flags ordinary loopback / local host / port references that appear in normal docs and code. Your custom_rules below still BLOCK via their category defaults.",
+  "rules": {"loopback-ipv4": "warn", "localhost-port": "warn", "localhost-bare": "warn", "port-reference": "warn"},
+  "_allow_values_comment": "Known-public, non-secret literals to exempt everywhere, including history scans of old commit diffs where inline 'content-guard: allow' markers cannot reach. Exact full-string match only (a substring does not exempt a larger match). Apply to other scans with: git_scan --allow-values-from <this-file>.",
+  "allow_values": ["you@example.com", "localhost:11434"],
+  "custom_rules": [
+    {"id": "internal-hostname", "category": "infrastructure", "pattern": "\\b(host-one|host-two|host-three)\\b", "replacement": "[redacted-host]", "description": "Your real machine / host names.", "flags": ["ignorecase"]},
+    {"id": "internal-home-subnet", "category": "infrastructure", "pattern": "\\b10\\.0\\.0\\.\\d{1,3}\\b", "replacement": "[redacted-ip]", "description": "Your real LAN subnet."},
+    {"id": "internal-username-path", "category": "personal", "pattern": "/home/youruser|\\byouruser\\b", "replacement": "[redacted-user]", "description": "Your OS username / home path."},
+    {"id": "internal-person", "category": "pii", "pattern": "\\b(person-one|person-two)\\b", "replacement": "[redacted-person]", "description": "Personal device / people names.", "flags": ["ignorecase"]}
+  ]
+}

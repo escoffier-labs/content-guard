@@ -117,4 +117,35 @@ PYTHONPATH=src python3 -m content_guard.git_scan \
   --policy policies/private-repo.local.json
 ```
 
-Do not commit private policy files.
+Do not commit private policy files. A `*.local.json` gitignore rule guards the conventional name, but the safest habit is to keep the real file outside the repo entirely, at the pre-push hook's default path `~/.config/content-guard/internal.json`.
+
+Start from the tracked template [`policies/private-repo.local.example.json`](../policies/private-repo.local.example.json). It documents the full schema with sanitized placeholders. Copy it, then replace the placeholder patterns with your own identifiers.
+
+Two things in the template are easy to miss:
+
+- **Downgrade generic infra rules to `warn`.** A private policy usually keeps `defaults.infrastructure: block` so its custom host/subnet rules block. But that broad default also re-flags ordinary `localhost`, loopback, and port references that the public policy correctly only warns. Mirror the public policy's overrides so the private scan does not false-positive on normal docs:
+
+  ```json
+  "rules": {"loopback-ipv4": "warn", "localhost-port": "warn", "localhost-bare": "warn", "port-reference": "warn"}
+  ```
+
+  Custom rules still block, because they resolve through their category defaults rather than these rule-id overrides.
+
+- **`allow_values` for known-public literals.** Inline `content-guard: allow` markers cannot clear a history scan, because the marker does not exist in an old commit's diff. List the exact literal instead (a public author email, a standard example port) and it is allowed everywhere, including history. Exact full-string match only.
+
+## Applying a Private Allowlist to the Public Scan
+
+Keep personal literals out of the shipped `public-repo.json`. To let a private allowlist clear a scan that runs against the public policy, merge its `allow_values` in at scan time:
+
+```bash
+PYTHONPATH=src python3 -m content_guard.git_scan \
+  --all-tracked \
+  --policy policies/public-repo.json \
+  --allow-values-from ~/.config/content-guard/internal.json
+```
+
+The flag is repeatable and only pulls in `allow_values` (not the rest of the policy). A missing file is skipped with a warning, so it never weakens a scan. The bundled pre-push hook passes the private file to every scan this way.
+
+## Back Up the Private Policy
+
+The real private policy is untracked by design, so nothing in git protects it. Include `~/.config/content-guard/` in your encrypted backup set so a machine rebuild does not lose your identifiers, allowlist, and rule overrides.
