@@ -125,6 +125,17 @@ DEFAULT_RULES: tuple[Rule, ...] = (
         flags=re.IGNORECASE,
     ),
     Rule(
+        id="jwt-token",
+        category="secret",
+        # All standard JWTs base64url-encode a JSON header, so they start with
+        # eyJ. A dedicated rule keeps recall when api-key-assignment skips
+        # dotted identifier chains (JWT segments would otherwise look like a
+        # three-segment chain).
+        pattern=r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b",
+        replacement="[redacted-jwt]",
+        description="JSON Web Token.",
+    ),
+    Rule(
         id="bearer-token",
         category="secret",
         pattern=r"\bBearer\s+[A-Za-z0-9_~+/=-](?:[A-Za-z0-9._~+/=-]{18,}[A-Za-z0-9_~+/=-])\b",
@@ -153,7 +164,7 @@ DEFAULT_RULES: tuple[Rule, ...] = (
             r"(?:"
             r"['\"][A-Za-z0-9._~+/=-]{20,}['\"]"
             r"|"
-            r"(?!(?:[A-Za-z_]+\.)+[A-Za-z_]+(?![A-Za-z0-9._~+/=-]))"
+            r"(?!(?:[A-Za-z_$][A-Za-z0-9_$]*\.)+[A-Za-z_$][A-Za-z0-9_$]*(?![A-Za-z0-9._~+/=-]))"
             r"(?=[A-Za-z._~+/=-]*[0-9])"
             r"[A-Za-z0-9_~+/=-](?:[A-Za-z0-9._~+/=-]{18,}[A-Za-z0-9_~+/=-])"
             r")"

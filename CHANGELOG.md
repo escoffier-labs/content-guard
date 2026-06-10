@@ -12,13 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `content-guard allow add` / `allow list` subcommands for managing
   `allow_values` in the private policy from the command line, with optional
   provenance notes.
+- `jwt-token` rule catching bare JSON Web Tokens anywhere in text.
 
 ### Fixed
 
 - `api-key-assignment` no longer flags unquoted identifier RHS values such as
   `apiKey = apiKeys.anthropicApiKey` or `token: daemonConfigPrimaryToken`;
   unquoted values must now contain a digit and not be a dotted identifier
-  chain. Quoted literals match as before.
+  chain. Identifier chain segments may contain digits
+  (`apiKeys.v2.anthropicApiKey`, `ctx.env.S3_SECRET_ACCESS_KEY`), with JWT
+  recall preserved by the new `jwt-token` rule. Quoted literals match as
+  before.
 
 ## [0.2.0] - 2026-06-10
 

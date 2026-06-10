@@ -1,3 +1,4 @@
+# content-guard: allow jwt-token file
 from __future__ import annotations
 
 import unittest
@@ -211,3 +212,31 @@ class ApiKeyAssignmentRhsTests(unittest.TestCase):
         # content-guard: allow all
         result = scan_text('secret: "0123456789abcdef0123456789abcdef"')
         self.assertIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+
+class ApiKeyAssignmentDigitChainTests(unittest.TestCase):
+    def test_versioned_property_chain_is_not_a_secret(self) -> None:
+        # content-guard: allow all
+        result = scan_text("const apiKey = apiKeys.v2.anthropicApiKey;")
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_env_member_with_digit_is_not_a_secret(self) -> None:
+        # content-guard: allow all
+        result = scan_text("token: ctx.env.S3_SECRET_ACCESS_KEY,")
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+
+class JwtTokenRuleTests(unittest.TestCase):
+    def test_bare_jwt_assignment_is_caught(self) -> None:
+        # content-guard: allow all
+        result = scan_text(
+            "token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N1XgL0n3I9PlFUP0THsR8U"
+        )
+        self.assertIn("jwt-token", {f.rule_id for f in result.findings})
+
+    def test_jwt_outside_assignment_is_caught(self) -> None:
+        # content-guard: allow all
+        result = scan_text(
+            "Use eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N1XgL0n3I9PlFUP0THsR8U here."
+        )
+        self.assertIn("jwt-token", {f.rule_id for f in result.findings})
