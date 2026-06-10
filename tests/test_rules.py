@@ -156,3 +156,26 @@ class PublicRepoPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EmailSshRemoteTests(unittest.TestCase):
+    def test_ssh_remote_url_is_not_an_email(self) -> None:
+        # content-guard: allow all
+        result = scan_text("Push to git@github.com:owner/repo.git when ready.")
+        rule_ids = {f.rule_id for f in result.findings}
+
+        self.assertNotIn("email", rule_ids)
+
+    def test_scp_style_path_is_not_an_email(self) -> None:
+        # content-guard: allow all
+        result = scan_text("Copy with scp backup@host.example.com:/srv/data .")
+        rule_ids = {f.rule_id for f in result.findings}
+
+        self.assertNotIn("email", rule_ids)
+
+    def test_email_followed_by_colon_and_space_still_matches(self) -> None:
+        # content-guard: allow all
+        result = scan_text("Contact alice@gmail.com: she has the keys.")
+        rule_ids = {f.rule_id for f in result.findings}
+
+        self.assertIn("email", rule_ids)

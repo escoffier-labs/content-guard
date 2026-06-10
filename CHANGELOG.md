@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `api-key-assignment` false positive.
 - Deprecated `importlib.abc.Traversable` import, removed in Python 3.14.
+- `email` rule no longer matches SSH and scp remote URLs such as `git@github.com:owner/repo.git`.
 
 ## [0.1.1] - 2026-04-28
 

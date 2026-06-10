@@ -102,7 +102,9 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule(
         id="email",
         category="pii",
-        pattern=r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+        # (?!:\S) keeps SSH/scp remotes like git@github.com:owner/repo.git from
+        # matching while emails followed by ": " in prose still do.
+        pattern=r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b(?!:\S)",
         replacement="<PRIVATE_EMAIL>",
         description="Email address.",
         flags=re.IGNORECASE,
