@@ -14,3 +14,6 @@ implementation-notes.md
 
 # Local operator-report artifacts
 .brigade/
+
+# Local brigade memory (cards are local-only, never committed)
+/memory/
