@@ -202,7 +202,6 @@ def _allowed_by(
 def _skipped_ranges(text: str, options: ScanOptions) -> list[tuple[int, int]]:
     ranges: list[tuple[int, int]] = []
     lines = text.splitlines(keepends=True)
-    offset = 0
 
     if not options.scan_frontmatter and lines and lines[0].strip() == "---":
         end = len(lines[0])
