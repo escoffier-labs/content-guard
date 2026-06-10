@@ -51,7 +51,18 @@ class CliTests(unittest.TestCase):
             leak_text = "Service is localhost:5204.\n"
             (root / "README.md").write_text(leak_text)
 
-            for excluded in ("node_modules/foo", ".git", "dist", "build", "coverage", ".next", ".venv", "__pycache__", "vendor/sub", ".claude"):
+            for excluded in (
+                "node_modules/foo",
+                ".git",
+                "dist",
+                "build",
+                "coverage",
+                ".next",
+                ".venv",
+                "__pycache__",
+                "vendor/sub",
+                ".claude",
+            ):
                 excluded_dir = root / excluded
                 excluded_dir.mkdir(parents=True)
                 (excluded_dir / "README.md").write_text(leak_text)
@@ -80,7 +91,18 @@ class CliTests(unittest.TestCase):
         self.assertEqual(len(payload["files"]), 1)
         self.assertTrue(payload["files"][0]["path"].endswith("README.md"))
         for entry in payload["files"]:
-            for excluded in ("node_modules", ".git", "dist", "build", "coverage", ".next", ".venv", "__pycache__", "vendor", ".claude"):
+            for excluded in (
+                "node_modules",
+                ".git",
+                "dist",
+                "build",
+                "coverage",
+                ".next",
+                ".venv",
+                "__pycache__",
+                "vendor",
+                ".claude",
+            ):
                 self.assertNotIn(f"/{excluded}/", entry["path"])
 
     def test_pr_draft_helper_is_advisory_by_default(self) -> None:

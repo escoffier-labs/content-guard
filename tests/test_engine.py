@@ -79,7 +79,9 @@ class EngineTests(unittest.TestCase):
     def test_public_repo_policy_blocks_pii_and_secrets(self) -> None:
         policy_path = Path(__file__).resolve().parents[1] / "policies" / "public-repo.json"
         # content-guard: allow all
-        result = scan_text("token = abcdefghijklmnopqrstuvwxyz123456 and alice@solomonneas.dev", policy=load_policy(policy_path))
+        result = scan_text(
+            "token = abcdefghijklmnopqrstuvwxyz123456 and alice@solomonneas.dev", policy=load_policy(policy_path)
+        )
 
         actions = {(f.rule_id, f.action) for f in result.findings}
         self.assertIn(("api-key-assignment", "block"), actions)
@@ -121,11 +123,7 @@ class EngineTests(unittest.TestCase):
             )
             opf_bin.chmod(0o755)
             policy_path.write_text(
-                '{'
-                '"backends":{"opf":{"enabled":true,"action":"redact","bin":"'
-                + str(opf_bin)
-                + '"}}'
-                '}'
+                '{"backends":{"opf":{"enabled":true,"action":"redact","bin":"' + str(opf_bin) + '"}}}'
             )
 
             result = scan_text("Alice Example wrote the draft.", policy=load_policy(policy_path))
@@ -193,12 +191,7 @@ class FileScopedAllowTests(unittest.TestCase):
         self.assertFalse(result.blocked)
 
     def test_allow_all_file_scope_exempts_all_rules_in_file(self) -> None:
-        text = (
-            "<!-- content-guard: allow all file -->\n"
-            "\n"
-            "Email: alice@example.com\n"
-            "Service: 192.168.1.10:8080\n"
-        )
+        text = "<!-- content-guard: allow all file -->\n\nEmail: alice@example.com\nService: 192.168.1.10:8080\n"
         result = scan_text(text)
 
         self.assertFalse(result.blocked)
@@ -327,10 +320,7 @@ class KnownHostsTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             policy_path = Path(tmp) / "policy.json"
             policy_path.write_text(
-                '{'
-                '"rules": {"private-ipv4": "warn"},'
-                '"known_hosts": ["192.168.99.56", "192.168.99.91"]'
-                '}'
+                '{"rules": {"private-ipv4": "warn"},"known_hosts": ["192.168.99.56", "192.168.99.91"]}'
             )
             # content-guard: allow all
             result = scan_text("Real host is 192.168.99.56 here.", policy=load_policy(policy_path))
@@ -343,12 +333,7 @@ class KnownHostsTests(unittest.TestCase):
     def test_non_known_host_ip_falls_back_to_normal_rule(self) -> None:
         with TemporaryDirectory() as tmp:
             policy_path = Path(tmp) / "policy.json"
-            policy_path.write_text(
-                '{'
-                '"rules": {"private-ipv4": "warn"},'
-                '"known_hosts": ["192.168.99.56"]'
-                '}'
-            )
+            policy_path.write_text('{"rules": {"private-ipv4": "warn"},"known_hosts": ["192.168.99.56"]}')
             # content-guard: allow all
             result = scan_text("Some other IP is 10.0.0.5 in the docs.", policy=load_policy(policy_path))
 
@@ -359,11 +344,7 @@ class KnownHostsTests(unittest.TestCase):
     def test_known_hosts_hostname_match(self) -> None:
         with TemporaryDirectory() as tmp:
             policy_path = Path(tmp) / "policy.json"
-            policy_path.write_text(
-                '{'
-                '"known_hosts": ["host-a.local", "host-c.local"]'
-                '}'
-            )
+            policy_path.write_text('{"known_hosts": ["host-a.local", "host-c.local"]}')
             # content-guard: allow all
             result = scan_text("SSH into host-a.local to debug.", policy=load_policy(policy_path))
 
@@ -374,11 +355,7 @@ class KnownHostsTests(unittest.TestCase):
         # 192.168.99.56 should not match if the text has 192.168.99.560 or similar
         with TemporaryDirectory() as tmp:
             policy_path = Path(tmp) / "policy.json"
-            policy_path.write_text(
-                '{'
-                '"known_hosts": ["192.168.99.56"]'
-                '}'
-            )
+            policy_path.write_text('{"known_hosts": ["192.168.99.56"]}')
             # content-guard: allow all
             result = scan_text("Version is 1.92.168.4.561 actually.", policy=load_policy(policy_path))
 

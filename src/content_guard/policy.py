@@ -140,7 +140,9 @@ def load_policy(path: str | PathLike[str] | Traversable | None) -> Policy:
     custom_rules = [_parse_custom_rule(item, i) for i, item in enumerate(raw.get("custom_rules", []))]
     known_hosts = _parse_known_hosts(raw.get("known_hosts"))
     allow_values = _parse_allow_values(raw.get("allow_values"))
-    opf_backend = _parse_opf_backend(raw.get("backends", {}).get("opf") if isinstance(raw.get("backends"), dict) else None)
+    opf_backend = _parse_opf_backend(
+        raw.get("backends", {}).get("opf") if isinstance(raw.get("backends"), dict) else None
+    )
     if opf_backend.action:
         rules["opf-pii"] = opf_backend.action
 

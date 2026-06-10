@@ -84,10 +84,7 @@ class AuditReport:
             },
             "by_action": dict(sorted(self.by_action.items())),
             "by_category": dict(sorted(self.by_category.items())),
-            "by_rule": [
-                {"rule_id": rule_id, "count": count}
-                for rule_id, count in self.top_rules(limit=top_rules)
-            ],
+            "by_rule": [{"rule_id": rule_id, "count": count} for rule_id, count in self.top_rules(limit=top_rules)],
             "top_offenders": [
                 {"path": entry.path, "findings": entry.findings, "blocked": entry.blocked}
                 for entry in self.top_offenders(limit=top_offenders)
@@ -158,9 +155,7 @@ def _record(report: AuditReport, path: Path, result: GuardResult, *, target: Pat
     except ValueError:
         path_str = str(path)
 
-    report.file_audits.append(
-        FileAudit(path=path_str, findings=len(findings), blocked=result.blocked)
-    )
+    report.file_audits.append(FileAudit(path=path_str, findings=len(findings), blocked=result.blocked))
 
     if not findings:
         return

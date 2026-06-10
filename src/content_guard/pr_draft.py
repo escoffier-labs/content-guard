@@ -44,7 +44,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     output_path.write_text(result.redacted_text)
-    report_path.write_text(json.dumps({**to_payload(result), "source": str(target), "output": str(output_path)}, indent=2, sort_keys=True))
+    report_path.write_text(
+        json.dumps({**to_payload(result), "source": str(target), "output": str(output_path)}, indent=2, sort_keys=True)
+    )
 
     print(to_text(result, path=str(target)))
     print(f"sanitized={output_path}")

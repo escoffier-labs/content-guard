@@ -50,9 +50,7 @@ class BaselineModuleTests(unittest.TestCase):
         # baseline entries; capturing them just adds noise.
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "doc.md").write_text(
-                "<!-- content-guard: allow localhost-port -->\nlocalhost:5204\n"
-            )
+            (root / "doc.md").write_text("<!-- content-guard: allow localhost-port -->\nlocalhost:5204\n")
 
             baseline = init_baseline(root, policy=Policy())
 
@@ -241,17 +239,13 @@ class BaselineModuleTests(unittest.TestCase):
     def test_baseline_load_rejects_unsupported_version(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "bad.json"
-            path.write_text(
-                json.dumps({"version": 999, "created_at": "x", "entries": []})
-            )
+            path.write_text(json.dumps({"version": 999, "created_at": "x", "entries": []}))
             with self.assertRaises(ValueError) as ctx:
                 load_baseline(path)
             self.assertIn("version", str(ctx.exception))
 
             # Non-integer version.
-            path.write_text(
-                json.dumps({"version": "1", "created_at": "x", "entries": []})
-            )
+            path.write_text(json.dumps({"version": "1", "created_at": "x", "entries": []}))
             with self.assertRaises(ValueError):
                 load_baseline(path)
 
@@ -401,9 +395,7 @@ class BaselineCliTests(unittest.TestCase):
 
             # Add a NEW violation that is not in the baseline.
             # content-guard: allow all
-            target.write_text(
-                "Service is localhost:5204 and new leak localhost:9999.\n"
-            )
+            target.write_text("Service is localhost:5204 and new leak localhost:9999.\n")
 
             proc = subprocess.run(
                 [

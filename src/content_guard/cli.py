@@ -127,10 +127,7 @@ def build_parser() -> argparse.ArgumentParser:
     baseline_init.add_argument("--policy", help="JSON policy file")
     baseline_init.add_argument(
         "--output",
-        help=(
-            f"output path for the baseline file "
-            f"(default: <target>/{DEFAULT_BASELINE_FILENAME})"
-        ),
+        help=(f"output path for the baseline file (default: <target>/{DEFAULT_BASELINE_FILENAME})"),
     )
 
     return parser
@@ -164,10 +161,7 @@ def _scan(args: argparse.Namespace) -> int:
     if target_path and target_path.is_dir():
         results = _scan_directory(target_path, policy, options)
         if baseline is not None:
-            results = [
-                (p, _apply_baseline(r, baseline, _baseline_rel_path(p, target_path)))
-                for p, r in results
-            ]
+            results = [(p, _apply_baseline(r, baseline, _baseline_rel_path(p, target_path))) for p, r in results]
         blocked = any(result.blocked for _, result in results)
         if args.json:
             print(
@@ -177,9 +171,7 @@ def _scan(args: argparse.Namespace) -> int:
                         "blocked": blocked,
                         "files_scanned": len(results),
                         "files": [
-                            {"path": str(path), **to_payload(result)}
-                            for path, result in results
-                            if result.findings
+                            {"path": str(path), **to_payload(result)} for path, result in results if result.findings
                         ],
                     },
                     indent=2,
@@ -328,10 +320,7 @@ def _baseline(args: argparse.Namespace) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     save_baseline(baseline, out_path)
 
-    print(
-        f"Baseline written: {out_path} "
-        f"({len(baseline.entries)} entry(ies) captured)"
-    )
+    print(f"Baseline written: {out_path} ({len(baseline.entries)} entry(ies) captured)")
     return 0
 
 

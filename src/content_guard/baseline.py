@@ -185,9 +185,7 @@ def load_baseline(path: Path) -> Baseline:
     if not isinstance(version, int):
         raise ValueError("baseline 'version' must be an integer")
     if version != BASELINE_SCHEMA_VERSION:
-        raise ValueError(
-            f"unsupported baseline version {version!r}; expected {BASELINE_SCHEMA_VERSION}"
-        )
+        raise ValueError(f"unsupported baseline version {version!r}; expected {BASELINE_SCHEMA_VERSION}")
 
     created_at = raw.get("created_at", "")
     if not isinstance(created_at, str):
@@ -210,9 +208,7 @@ def load_baseline(path: Path) -> Baseline:
                 fingerprint=str(item["fingerprint"]),
             )
         except KeyError as exc:
-            raise ValueError(
-                f"baseline entries[{i}] missing required field {exc.args[0]!r}"
-            ) from exc
+            raise ValueError(f"baseline entries[{i}] missing required field {exc.args[0]!r}") from exc
         except (TypeError, ValueError) as exc:
             raise ValueError(f"baseline entries[{i}] has invalid value: {exc}") from exc
         entries.append(entry)

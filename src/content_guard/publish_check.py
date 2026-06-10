@@ -29,8 +29,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--commit-range", dest="rev_range", help="commit revision range to scan")
     parser.add_argument("--all-commits", action="store_true", help="scan all reachable commit messages")
     parser.add_argument("--all-tracked", action="store_true", help="also scan all tracked files")
-    parser.add_argument("--include-git-config", action="store_true", help="include .git/config in file scans when present")
-    parser.add_argument("--advisory-only", action="store_true", help="always exit zero while reporting would-fail checks")
+    parser.add_argument(
+        "--include-git-config", action="store_true", help="include .git/config in file scans when present"
+    )
+    parser.add_argument(
+        "--advisory-only", action="store_true", help="always exit zero while reporting would-fail checks"
+    )
     parser.add_argument("--json", action="store_true", help="emit machine-readable combined report")
     parser.add_argument("--opf", action="store_true", help="run optional OPF backend for PR body preparation")
     parser.add_argument("--opf-bin", help="path to opf binary for PR body preparation")
@@ -132,7 +136,9 @@ def run_publish_check(args: argparse.Namespace) -> tuple[dict[str, Any], list[st
     return payload, lines
 
 
-def _prepare_pr_check(args: argparse.Namespace, policy_path: Path | PathLike[str] | Traversable) -> tuple[dict[str, Any], Any]:
+def _prepare_pr_check(
+    args: argparse.Namespace, policy_path: Path | PathLike[str] | Traversable
+) -> tuple[dict[str, Any], Any]:
     source = Path(args.pr_body)
     out_dir = Path(args.out_dir) if args.out_dir else Path(".content-guard") / "pr-drafts"
     payload, result = prepare_pr_body(

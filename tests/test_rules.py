@@ -99,9 +99,7 @@ class PackagedPolicyParityTests(unittest.TestCase):
         policy_path = resources.files("content_guard").joinpath("policies", "public-repo.json")
         policy = load_policy(policy_path)
         # content-guard: allow all
-        result = scan_text(
-            "Bind to 127.0.0.1 and use localhost:11434 with port 18789.", policy=policy
-        )
+        result = scan_text("Bind to 127.0.0.1 and use localhost:11434 with port 18789.", policy=policy)
 
         actions = {(f.rule_id, f.action) for f in result.findings}
         self.assertIn(("loopback-ipv4", "warn"), actions)
@@ -114,9 +112,7 @@ class PackagedPolicyParityTests(unittest.TestCase):
 
         policy = _default_repo_policy()
         # content-guard: allow all
-        result = scan_text(
-            "Bind to 127.0.0.1 and use localhost:11434 with port 18789.", policy=policy
-        )
+        result = scan_text("Bind to 127.0.0.1 and use localhost:11434 with port 18789.", policy=policy)
 
         actions = {(f.rule_id, f.action) for f in result.findings}
         self.assertIn(("loopback-ipv4", "warn"), actions)
