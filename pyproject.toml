@@ -39,6 +39,9 @@ content_guard = ["policies/*.json"]
 line-length = 120
 src = ["src", "tests"]
 
+[tool.pytest.ini_options]
+filterwarnings = ["error::DeprecationWarning"]
+
 [tool.mypy]
 python_version = "3.11"
 warn_unused_ignores = true
