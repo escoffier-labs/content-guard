@@ -4,7 +4,7 @@ import argparse
 import json
 import re
 import sys
-from importlib.abc import Traversable
+from importlib.resources.abc import Traversable
 from os import PathLike
 from pathlib import Path
 

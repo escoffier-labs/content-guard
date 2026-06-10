@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from importlib.abc import Traversable
+from importlib.resources.abc import Traversable
 from os import PathLike
 from pathlib import Path
 

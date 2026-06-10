@@ -4,7 +4,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from importlib import resources
-from importlib.abc import Traversable
+from importlib.resources.abc import Traversable
 from os import PathLike
 from pathlib import Path
 from typing import Any

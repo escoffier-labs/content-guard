@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from importlib.abc import Traversable
+from importlib.resources.abc import Traversable
 from os import PathLike
 from pathlib import Path
 from types import SimpleNamespace
