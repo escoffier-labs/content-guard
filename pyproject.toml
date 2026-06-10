@@ -16,6 +16,9 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy"]
+
 [project.scripts]
 content-guard = "content_guard.cli:main"
 content-guard-git = "content_guard.git_scan:main"
@@ -31,3 +34,14 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 content_guard = ["policies/*.json"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
