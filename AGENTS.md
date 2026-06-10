@@ -7,16 +7,13 @@
 
 ## Definition of Done
 
-Before reporting any change complete, run all four gates and re-run after the last edit:
+Before reporting any change complete, run the verification entrypoint and re-run after the last edit:
 
 ```bash
-.venv/bin/ruff check src tests
-.venv/bin/ruff format --check src tests
-.venv/bin/mypy src
-.venv/bin/pytest -q
+./scripts/verify
 ```
 
-Report actual results. If anything fails, paste the failure verbatim and do not claim success. CI (`.github/workflows/ci.yml`) runs the same gates on Python 3.11/3.12/3.13.
+It runs ruff check, ruff format --check, mypy, and pytest from `.venv/bin`. Report actual results. If anything fails, paste the failure verbatim and do not claim success. CI (`.github/workflows/ci.yml`) runs the same gates on Python 3.11/3.12/3.13.
 
 ## Rules by Trigger
 
