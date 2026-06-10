@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-10
+
 ### Added
 
 - `audit` and `baseline` CLI subcommands for repo-wide review workflows.
@@ -14,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Literal-value allowlist (`allow_values`) for known-public strings.
 - File-scoped allow comments, example-pattern downgrades, and a `known_hosts` policy.
 - Rule-level action defaults that override category defaults.
-- Publishable OpenClaw plugin package (`@solomonneas/content-guard`) with ClawHub compatibility fields.
+- Example OpenClaw plugin adapter (`openclaw-plugin/`) that reuses the same Python engine. It is installed from source and is not published to a registry.
 - `content-guard` pre-push hook.
 - Private policy template (`policies/private-repo.local.example.json`) and documentation.
 - Continuous integration with lint, format, typecheck, and test gates.

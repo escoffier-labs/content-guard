@@ -1,6 +1,8 @@
-# @solomonneas/content-guard
+# content-guard OpenClaw adapter
 
-OpenClaw outbound message adapter for [Content Guard](https://github.com/solomonneas/content-guard).
+OpenClaw outbound message adapter for [Content Guard](https://github.com/escoffier-labs/content-guard).
+
+> This is an example adapter. It is installed from source, not published to npm or any other registry. Only the `content-guard` Python package is published (on PyPI). Clone the repo and point OpenClaw at this directory.
 
 Scans every outbound OpenClaw message against a Content Guard policy before delivery. Replaces the message with a redacted form (or blocks it entirely) when sensitive content is detected: secrets, infrastructure identifiers, PII, and any custom rules you add to the policy.
 
@@ -10,19 +12,20 @@ Scans every outbound OpenClaw message against a Content Guard policy before deli
 # 1. The Python core (does the actual scanning):
 pip install content-guard
 
-# 2. This OpenClaw adapter:
-npm install @solomonneas/content-guard
+# 2. This OpenClaw adapter, from source:
+git clone https://github.com/escoffier-labs/content-guard.git
+# then point OpenClaw at the openclaw-plugin/ directory (see below).
 ```
 
 ## Wire into OpenClaw
 
-Add to your `openclaw.json`:
+Add to your `openclaw.json`, pointing the load path at the local `openclaw-plugin/` directory:
 
 ```json
 {
   "plugins": {
     "load": {
-      "paths": ["@solomonneas/content-guard"]
+      "paths": ["/path/to/content-guard/openclaw-plugin"]
     },
     "entries": {
       "content-guard": {

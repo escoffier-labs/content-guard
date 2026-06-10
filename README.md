@@ -167,6 +167,8 @@ For n8n publish workflows, start with an advisory step that reports findings wit
 
 Content Guard can also run as an OpenClaw outbound message plugin. The plugin lives in `openclaw-plugin/` and shells out to the same Python engine, so OpenClaw messages use the same policy model as publish gates.
 
+The plugin is an example adapter. It is installed from source (clone this repo and point OpenClaw at `openclaw-plugin/`) and is not published to npm or any other registry. Only the `content-guard` Python package on PyPI is published.
+
 See [docs/OPENCLAW_PLUGIN.md](docs/OPENCLAW_PLUGIN.md).
 
 ## Design Notes
