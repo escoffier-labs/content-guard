@@ -6,7 +6,6 @@ import sys
 from importlib.resources.abc import Traversable
 from os import PathLike
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 from .git_commits import _commit_revs, _git, _subject
@@ -193,7 +192,7 @@ def _scan_file_check(*, policy: Any, all_tracked: bool, include_git_config: bool
 
 
 def _scan_commit_check(*, policy: Any, rev_range: str | None, all_commits: bool) -> tuple[dict[str, Any], list[str]]:
-    revs = _commit_revs(SimpleNamespace(rev_range=rev_range, all=all_commits))
+    revs = _commit_revs(argparse.Namespace(rev_range=rev_range, all=all_commits))
 
     commits = []
     blocked = False

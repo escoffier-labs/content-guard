@@ -4,7 +4,6 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 from .n8n_advisory import run_advisory_check
@@ -80,7 +79,7 @@ def _run_fixture(path: Path, args: argparse.Namespace) -> dict[str, Any]:
         request = _public_request(request)
         result = run_advisory_check(
             request,
-            SimpleNamespace(policy=args.policy, opf=args.opf, opf_bin=args.opf_bin, opf_device=args.opf_device),
+            argparse.Namespace(policy=args.policy, opf=args.opf, opf_bin=args.opf_bin, opf_device=args.opf_device),
         )
         failures = _expectation_failures(result, expected)
         return {
