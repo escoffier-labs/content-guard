@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `content-guard allow add` / `allow list` subcommands for managing
+  `allow_values` in the private policy from the command line, with optional
+  provenance notes.
+
+### Fixed
+
+- `api-key-assignment` no longer flags unquoted identifier RHS values such as
+  `apiKey = apiKeys.anthropicApiKey` or `token: daemonConfigPrimaryToken`;
+  unquoted values must now contain a digit and not be a dotted identifier
+  chain. Quoted literals match as before.
+
 ## [0.2.0] - 2026-06-10
 
 ### Added

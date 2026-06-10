@@ -124,6 +124,15 @@ This tutorial uses localhost as an example.
 
 Use `content-guard: allow all` sparingly for examples where every finding is intentional.
 
+For known-public literals that trip history scans (where inline comments cannot reach old commit diffs), add them to the private policy allowlist from the command line:
+
+```bash
+content-guard allow add "git@github.com" --note "SSH remote prefix, public by definition"
+content-guard allow list
+```
+
+By default this edits `~/.config/content-guard/internal.json` (override with `--policy` or `CONTENT_GUARD_PRIVATE_POLICY`).
+
 ## PR and Git Guards
 
 PR bodies and public repository content are publishing boundaries too. Use stricter policies before copying generated summaries, dogfood notes, local test output, fixtures, or docs into public GitHub surfaces:

@@ -142,10 +142,21 @@ DEFAULT_RULES: tuple[Rule, ...] = (
         #   apiKey = "${...}"           (shell interpolation)
         #   apiKey = config.x or cfg.x  (config object access)
         # These are code reading from a secret, not the secret itself.
+        # Unquoted values must contain a digit and must not be a dotted
+        # identifier chain (apiKeys.anthropicApiKey) or a bare camelCase
+        # identifier (daemonConfigPrimaryToken): those are code passing a
+        # variable, not a hardcoded secret. Quoted 20+ char literals always
+        # match.
         pattern=(
             r"\b(?:api[_-]?key|token|secret)\s*[:=]\s*"
             r"(?!(?:process\.env|os\.environ|os\.getenv|config\.|cfg\.|settings\.|env\.|\$\{|\$\(|null\b|None\b|undefined\b|''|\"\"))"
-            r"['\"]?[A-Za-z0-9_~+/=-](?:[A-Za-z0-9._~+/=-]{18,}[A-Za-z0-9_~+/=-])['\"]?"
+            r"(?:"
+            r"['\"][A-Za-z0-9._~+/=-]{20,}['\"]"
+            r"|"
+            r"(?!(?:[A-Za-z_]+\.)+[A-Za-z_]+(?![A-Za-z0-9._~+/=-]))"
+            r"(?=[A-Za-z._~+/=-]*[0-9])"
+            r"[A-Za-z0-9_~+/=-](?:[A-Za-z0-9._~+/=-]{18,}[A-Za-z0-9_~+/=-])"
+            r")"
         ),
         replacement="[redacted-secret]",
         description="Likely API key, token, or secret assignment.",

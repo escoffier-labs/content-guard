@@ -179,3 +179,35 @@ class EmailSshRemoteTests(unittest.TestCase):
         rule_ids = {f.rule_id for f in result.findings}
 
         self.assertIn("email", rule_ids)
+
+
+class ApiKeyAssignmentRhsTests(unittest.TestCase):
+    def test_dotted_identifier_chain_is_not_a_secret(self) -> None:
+        # content-guard: allow all
+        result = scan_text("const apiKey = apiKeys.anthropicApiKey;")
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_camelcase_identifier_is_not_a_secret(self) -> None:
+        # content-guard: allow all
+        result = scan_text("token: daemonConfigPrimaryToken,")
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_member_env_access_is_not_a_secret(self) -> None:
+        # content-guard: allow all
+        result = scan_text("apiKey: ctx.env.FIRECRAWL_API_KEY,")
+        self.assertNotIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_unquoted_literal_with_digits_still_matches(self) -> None:
+        # content-guard: allow all
+        result = scan_text("Temporary token=abc123abc123abc123abc123abc123.")
+        self.assertIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_quoted_literal_still_matches(self) -> None:
+        # content-guard: allow all
+        result = scan_text('api_key = "sk-fixture0123456789abcdefgh"')
+        self.assertIn("api-key-assignment", {f.rule_id for f in result.findings})
+
+    def test_quoted_hex_still_matches(self) -> None:
+        # content-guard: allow all
+        result = scan_text('secret: "0123456789abcdef0123456789abcdef"')
+        self.assertIn("api-key-assignment", {f.rule_id for f in result.findings})

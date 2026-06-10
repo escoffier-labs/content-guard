@@ -6,6 +6,7 @@ import json
 import sys
 from pathlib import Path
 
+from . import allowlist
 from .audit import render_text as render_audit_text, run_audit
 from .baseline import (
     DEFAULT_BASELINE_FILENAME,
@@ -57,6 +58,10 @@ def main(argv: list[str] | None = None) -> int:
         return _audit(args)
     if args.command == "baseline":
         return _baseline(args)
+    if args.command == "allow":
+        if args.allow_action == "add":
+            return allowlist.run_add(args.policy, args.values, args.note)
+        return allowlist.run_list(args.policy)
 
     parser.error(f"unknown command: {args.command}")
     return 2
@@ -129,6 +134,26 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         help=(f"output path for the baseline file (default: <target>/{DEFAULT_BASELINE_FILENAME})"),
     )
+
+    allow_cmd = sub.add_parser(
+        "allow",
+        help="manage allow_values in the private policy (known-public literals)",
+    )
+    allow_sub = allow_cmd.add_subparsers(dest="allow_action", required=True)
+
+    allow_add = allow_sub.add_parser(
+        "add",
+        help="append exact literal strings to allow_values, skipping duplicates",
+    )
+    allow_add.add_argument("values", nargs="+", help="exact matched string(s) to allow")
+    allow_add.add_argument(
+        "--policy",
+        help=("policy file to edit (default: $CONTENT_GUARD_PRIVATE_POLICY or ~/.config/content-guard/internal.json)"),
+    )
+    allow_add.add_argument("--note", help="provenance note recorded next to the values")
+
+    allow_list = allow_sub.add_parser("list", help="print current allow_values")
+    allow_list.add_argument("--policy", help="policy file to read (same default as add)")
 
     return parser
 
