@@ -20,6 +20,12 @@ Content Guard keeps private infrastructure, secrets, and personal context out of
 
 It takes the practical parts of the local content scrubber and the useful model-backed idea behind Privacy Filter, then turns them into one maintainable system.
 
+<p align="center">
+  <img src="docs/assets/content-guard-redact.svg" alt="Recording: content-guard scan flags localhost, loopback, and a port reference as blocking; redact rewrites them in place; a re-scan comes back clean" width="760">
+</p>
+
+Scan a file, get a blocking report, redact in place, re-scan clean. The same engine runs as a pre-push hook, so the leaks above never reach a public remote in the first place.
+
 ## What It Checks
 
 - Deterministic rules for infrastructure, secrets, and high-confidence patterns
