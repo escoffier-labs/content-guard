@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - README now leads with a recorded terminal demo (`docs/assets/content-guard-redact.svg`, reproducible from `content-guard-redact.cast`) of the scan -> redact -> re-scan-clean flow, and adds `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, and issue / pull-request templates.
+- README reworked for adoption: opening states what / why / how-it-differs, adds CI and PyPI version badges, a Website link, a verified real-output proof block, and "Why not gitleaks, trufflehog, or detect-secrets?" plus "What Content Guard is not" sections.
 
 ### Fixed
 
