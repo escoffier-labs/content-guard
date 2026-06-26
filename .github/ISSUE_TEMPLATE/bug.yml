@@ -1,0 +1,45 @@
+name: Bug report
+description: content-guard caught the wrong thing, missed something, or errored
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Redact real secrets.** If you hit a bypass on an actual credential, replace it with a synthetic, obviously-fake value that still reproduces.
+  - type: input
+    id: version
+    attributes:
+      label: content-guard version
+      placeholder: "0.2.0 (content-guard --version)"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What went wrong
+      options:
+        - "Bypass: it missed something it should have flagged"
+        - "False positive: it flagged something fine"
+        - "Redaction left a value recoverable"
+        - "Crash / error"
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Minimal input (synthetic)
+      description: The smallest content that reproduces it. No real secrets.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: policy
+    attributes:
+      label: Policy used
+      placeholder: "default, public-repo, or a path to a custom policy"
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. actual
+    validations:
+      required: true

@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provenance notes.
 - `jwt-token` rule catching bare JSON Web Tokens anywhere in text.
 
+### Changed
+
+- README now leads with a recorded terminal demo (`docs/assets/content-guard-redact.svg`, reproducible from `content-guard-redact.cast`) of the scan -> redact -> re-scan-clean flow, and adds `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, and issue / pull-request templates.
+
 ### Fixed
 
 - `api-key-assignment` no longer flags unquoted identifier RHS values such as

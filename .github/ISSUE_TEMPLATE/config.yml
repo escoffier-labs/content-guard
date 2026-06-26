@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability or bypass
+    url: https://github.com/escoffier-labs/content-guard/security/policy
+    about: Report missed secrets, recoverable redactions, or other security issues privately, not as a public issue.
