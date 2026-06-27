@@ -9,15 +9,15 @@
 </p>
 
 <p align="center">
+  <a href="https://content-guard.escoffierlabs.dev"><strong>Website</strong></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/escoffier-labs/content-guard/ci.yml?branch=main&style=for-the-badge&label=ci" alt="CI status">
   <img src="https://img.shields.io/pypi/v/content-guard?style=for-the-badge&label=pypi" alt="PyPI version">
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge" alt="Apache-2.0 license">
   <img src="https://img.shields.io/badge/dependencies-zero_required-2ea44f?style=for-the-badge" alt="Zero required third-party dependencies">
-</p>
-
-<p align="center">
-  <a href="https://content-guard.escoffierlabs.dev"><strong>Website</strong></a>
 </p>
 
 Content Guard scans content for secrets, private infrastructure, and personal context, then blocks or redacts the leak before it ships. It runs at the publishing boundary, on the prose you are about to publish rather than only on a Git history, so a sloppy paste in a PR body, a blog draft, or generated agent output never reaches a public surface. Unlike commit-time secret scanners, it is content-aware: Markdown frontmatter, allow comments, JSON policy files, and a redaction format that leaves a clean, re-scannable file behind.
@@ -108,24 +108,6 @@ OPF can also be enabled from a policy file:
   }
 }
 ```
-
-## Why not gitleaks, trufflehog, or detect-secrets?
-
-Those are excellent at what they do, which is scanning Git history and commit diffs for high-entropy strings and known credential shapes. Content Guard solves a different problem.
-
-- **They scan code; Content Guard scans content.** gitleaks, trufflehog, and detect-secrets are built to find secrets in source repositories. Content Guard targets the prose you are about to publish: a PR body, a blog draft, a social post, a generated agent summary. A secret scanner does not look at the Markdown you paste into a release note.
-- **Infrastructure and personal context, not only credentials.** Content Guard flags private hostnames, RFC 1918 addresses, internal project names, and PII alongside secrets, because a public blog post leaking your internal network layout is a real disclosure even when no API key is involved.
-- **Policy-per-surface, not one global ruleset.** A docs repo needs to write `localhost` and `127.0.0.1` in setup instructions; a marketing post must not. Bundled policies treat the same `infrastructure` category as warnings for repos and hard blocks for public content, from the same engine.
-- **Redaction, not just detection.** Content Guard rewrites the leak in place and leaves a re-scannable file, so the fix is part of the tool rather than a manual follow-up.
-
-Run a credential scanner like gitleaks in CI for your commit history, and run Content Guard at the human publishing boundary. They are complementary.
-
-## What Content Guard is not
-
-- **Not a guarantee.** A clean scan means "no known pattern matched," not "safe to publish." It is a guardrail. Pair it with human review for anything sensitive.
-- **Not a Git-history secret scanner.** It scans the content in front of you, not deep commit history. For repository history use a dedicated tool such as gitleaks or trufflehog.
-- **Not a network or runtime DLP system.** It runs on files and text you hand it, not on live traffic.
-- **Not a hosted service.** It is a local CLI and library. Nothing leaves your machine.
 
 ## Policies
 
@@ -239,6 +221,24 @@ See [docs/OPENCLAW_PLUGIN.md](docs/OPENCLAW_PLUGIN.md).
 Privacy Filter influenced the optional model-backed PII layer, especially the idea that some personal data detection benefits from context. Content Guard does not copy Privacy Filter code. OPF integration is a subprocess adapter so the deterministic engine stays portable and maintainable.
 
 The deterministic rules are intentionally conservative. Public publishing should fail loudly on infrastructure and secret leakage, while model findings are better treated as review signals until a local policy proves they are reliable enough to block.
+
+## Why not gitleaks, trufflehog, or detect-secrets?
+
+Those are excellent at what they do, which is scanning Git history and commit diffs for high-entropy strings and known credential shapes. Content Guard solves a different problem.
+
+- **They scan code; Content Guard scans content.** gitleaks, trufflehog, and detect-secrets are built to find secrets in source repositories. Content Guard targets the prose you are about to publish: a PR body, a blog draft, a social post, a generated agent summary. A secret scanner does not look at the Markdown you paste into a release note.
+- **Infrastructure and personal context, not only credentials.** Content Guard flags private hostnames, RFC 1918 addresses, internal project names, and PII alongside secrets, because a public blog post leaking your internal network layout is a real disclosure even when no API key is involved.
+- **Policy-per-surface, not one global ruleset.** A docs repo needs to write `localhost` and `127.0.0.1` in setup instructions; a marketing post must not. Bundled policies treat the same `infrastructure` category as warnings for repos and hard blocks for public content, from the same engine.
+- **Redaction, not just detection.** Content Guard rewrites the leak in place and leaves a re-scannable file, so the fix is part of the tool rather than a manual follow-up.
+
+Run a credential scanner like gitleaks in CI for your commit history, and run Content Guard at the human publishing boundary. They are complementary.
+
+## What Content Guard is not
+
+- **Not a guarantee.** A clean scan means "no known pattern matched," not "safe to publish." It is a guardrail. Pair it with human review for anything sensitive.
+- **Not a Git-history secret scanner.** It scans the content in front of you, not deep commit history. For repository history use a dedicated tool such as gitleaks or trufflehog.
+- **Not a network or runtime DLP system.** It runs on files and text you hand it, not on live traffic.
+- **Not a hosted service.** It is a local CLI and library. Nothing leaves your machine.
 
 ## Contributing and security
 
