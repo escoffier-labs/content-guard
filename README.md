@@ -13,11 +13,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/escoffier-labs/content-guard/ci.yml?branch=main&style=for-the-badge&label=ci" alt="CI status">
-  <img src="https://img.shields.io/pypi/v/content-guard?style=for-the-badge&label=pypi" alt="PyPI version">
-  <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge" alt="Apache-2.0 license">
-  <img src="https://img.shields.io/badge/dependencies-zero_required-2ea44f?style=for-the-badge" alt="Zero required third-party dependencies">
+  <img src="https://shieldcn.dev/github/ci/escoffier-labs/content-guard.svg?branch=main&workflow=ci.yml" alt="CI status">
+  <img src="https://shieldcn.dev/pypi/content-guard.svg" alt="PyPI version">
+  <img src="https://shieldcn.dev/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://shieldcn.dev/badge/license-Apache--2.0-blue.svg" alt="Apache-2.0 license">
+  <img src="https://shieldcn.dev/badge/dependencies-zero_required-2ea44f.svg" alt="Zero required third-party dependencies">
 </p>
 
 Content Guard scans content for secrets, private infrastructure, and personal context, then blocks or redacts the leak before it ships. It runs at the publishing boundary, on the prose you are about to publish rather than only on a Git history, so a sloppy paste in a PR body, a blog draft, or generated agent output never reaches a public surface. Unlike commit-time secret scanners, it is content-aware: Markdown frontmatter, allow comments, JSON policy files, and a redaction format that leaves a clean, re-scannable file behind.
