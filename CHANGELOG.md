@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `allow_values` entries may now be longer than the matched span: a finding is
+  also cleared when an allow value contains the matched text and the whole
+  value is present on the matching line. This lets one known-public literal
+  (for example a full public path) clear a broad-prefix match on that line
+  only, instead of forcing an allowlist entry for the bare prefix that would
+  exempt it everywhere.
 - `content-guard allow add` / `allow list` subcommands for managing
   `allow_values` in the private policy from the command line, with optional
   provenance notes.

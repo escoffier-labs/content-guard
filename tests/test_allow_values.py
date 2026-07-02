@@ -46,6 +46,54 @@ class AllowValuesEngineTests(unittest.TestCase):
         self.assertNotEqual(emails[0].action, "allow")
         self.assertTrue(result.blocked)
 
+    def test_superstring_value_on_its_line_allows_contained_match(self) -> None:
+        # A known-public literal can be LONGER than the matched span: listing
+        # the full public path allows the home-path prefix match on that line
+        # only, without allowing the bare prefix everywhere.
+        policy = Policy(
+            defaults={"pii": "block"},
+            allow_values=["Reach me at srneas@gmail.com for docs"],
+        )
+        result = scan_text("intro\nReach me at srneas@gmail.com for docs\noutro", policy=policy)
+
+        emails = [f for f in result.findings if f.rule_id == "email"]
+        self.assertEqual(len(emails), 1)
+        self.assertEqual(emails[0].action, "allow")
+        self.assertEqual(emails[0].allowed_by, "allow-value")
+        self.assertFalse(result.blocked)
+
+    def test_superstring_value_not_on_line_still_blocks(self) -> None:
+        # The superstring allow is line-scoped: the same matched text on a
+        # different line (outside the listed literal) stays blocked.
+        policy = Policy(
+            defaults={"pii": "block"},
+            allow_values=["Reach me at srneas@gmail.com for docs"],
+        )
+        result = scan_text("mail srneas@gmail.com now", policy=policy)
+
+        emails = [f for f in result.findings if f.rule_id == "email"]
+        self.assertEqual(len(emails), 1)
+        self.assertNotEqual(emails[0].action, "allow")
+        self.assertTrue(result.blocked)
+
+    def test_superstring_value_covers_only_its_own_span(self) -> None:
+        # Two identical matches on one line: only the one inside the listed
+        # literal is cleared; the uncovered occurrence still blocks.
+        policy = Policy(
+            defaults={"pii": "block"},
+            allow_values=["docs contact srneas@gmail.com listed"],
+        )
+        result = scan_text(
+            "docs contact srneas@gmail.com listed, private srneas@gmail.com here",
+            policy=policy,
+        )
+
+        emails = [f for f in result.findings if f.rule_id == "email"]
+        self.assertEqual(len(emails), 2)
+        self.assertEqual(emails[0].allowed_by, "allow-value")
+        self.assertIsNone(emails[1].allowed_by)
+        self.assertTrue(result.blocked)
+
     def test_allow_value_overrides_block_across_rules(self) -> None:
         policy = Policy(
             defaults={"infrastructure": "block"},

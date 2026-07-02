@@ -43,6 +43,18 @@ def scan_text(text: str, policy: Policy | None = None, options: ScanOptions | No
             # reaches history scans of old diffs where no inline marker exists.
             if allowed_by is None and match.group(0) in allow_values:
                 allowed_by = "allow-value"
+            # A known-public literal may also be LONGER than the matched span
+            # (e.g. one public path that a broad home-path rule matches only a
+            # prefix of). It clears the finding only when this match span lies
+            # inside an occurrence of the literal on its line, so the same
+            # prefix elsewhere (even on the same line) stays blocked.
+            if allowed_by is None:
+                line_start = line_starts[line - 1]
+                line_end = line_starts[line] if line < len(line_starts) else len(text)
+                line_text = text[line_start:line_end]
+                allowed_by = _allowed_by_superstring_value(
+                    allow_values, match.group(0), line_text, line_start, start, end
+                )
             action = "allow" if allowed_by else active_policy.action_for(rule)
             findings.append(
                 Finding(
@@ -143,6 +155,32 @@ def scan_text(text: str, policy: Policy | None = None, options: ScanOptions | No
 
 def redact_text(text: str, policy: Policy | None = None, options: ScanOptions | None = None) -> str:
     return scan_text(text, policy=policy, options=options).redacted_text
+
+
+def _allowed_by_superstring_value(
+    allow_values: set[str],
+    matched: str,
+    line_text: str,
+    line_start: int,
+    start: int,
+    end: int,
+) -> str | None:
+    """Clear a match covered by a longer known-public allow value.
+
+    The match span must sit inside an occurrence of the allow value on its own
+    line; an identical match outside the literal (even on the same line) is
+    not cleared.
+    """
+    for value in allow_values:
+        if matched not in value:
+            continue
+        idx = line_text.find(value)
+        while idx != -1:
+            value_start = line_start + idx
+            if value_start <= start and end <= value_start + len(value):
+                return "allow-value"
+            idx = line_text.find(value, idx + 1)
+    return None
 
 
 def _line_starts(text: str) -> list[int]:
