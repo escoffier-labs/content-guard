@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "content-guard"
-version = "0.3.0"
-description = "Policy-driven content scanning and redaction for public publishing and agent output."
+version = "0.4.0"
+description = "Deprecated: merged into brigade-cli as the brigade guard command group. Policy-driven content scanning and redaction."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Content Guard is now part of [Brigade](https://github.com/escoffier-labs/brigade).** The scanner ships inside `brigade-cli` as the `brigade guard` command group, and `brigade scrub` works out of the box with no separate checkout. This repository is archived and receives no further releases. Install the maintained version with `pipx install brigade-cli`, and see the [guard docs](https://brigade.tools/docs/commands/guard) for the full command reference.
+
 <p align="center">
   <img src="docs/assets/content-guard-banner.jpg" alt="Content Guard banner">
 </p>
@@ -9,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://content-guard.escoffierlabs.dev"><strong>Website</strong></a>
+  <a href="https://brigade.tools"><strong>Website</strong></a>
 </p>
 
 <p align="center">
